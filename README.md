@@ -1,8 +1,10 @@
 # museProto_speaker
 Here is a tiny speaker app using a Muse Proto board
+
 with 2 running modes:
    - bluetooth player (BT ID : MUSE-SPEAKER-xxxxxx)
    - SD player(mp3)
+   
 It uses 3 buttons:
    - VM (gpio 32)
         - short press => volume -
