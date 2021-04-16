@@ -20,11 +20,11 @@ It uses 3 buttons:
 
    1. You have to add  the Muse specific library (muse_lib) to Arduino libraries
    
-   For example using these bash commands :
+   	For example using these bash commands :
    
              > cd ..../museProto_radio
              > cp -r muse_lib ..../Arduino/libraries
              
    2. You have also to copy some audio files from the "data" directory to the flash memory
    
-             with Arduino : => Tools => ESP32 Sketch Data Upload)
+             with Arduino : => Tools => ESP32 Sketch Data Upload
