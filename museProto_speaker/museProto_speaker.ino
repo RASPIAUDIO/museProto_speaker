@@ -14,14 +14,11 @@
 #include "Audio.h"
 #include "SD.h"
 #include "FS.h"
-//#include "driver/i2s.h"
+
 
 extern "C"
 {
 #include "hal_i2c.h"
-#include "hal_i2s.h"
-#include "driver/i2c.h"
-#include "driver/i2s.h"
 }
 
 #include "Arduino.h"
@@ -32,11 +29,8 @@ extern "C"
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "freertos/event_groups.h"
-#include "esp_vfs_fat.h"
 #include "esp_log.h"
 #include <sys/socket.h>
-#include "nvs.h"
-#include "nvs_flash.h"
 #include <dirent.h>
 #include "esp_bt_main.h"
 #include "esp_bt_defs.h"
@@ -61,17 +55,20 @@ extern "C"
 #define MU GPIO_NUM_12      // short => mute/unmute  long => stop (deep sleep)
 #define VM GPIO_NUM_32      // short => volume down  long => previous station
 #define VP GPIO_NUM_19      // short => volume up   long => next station
-#define CFG GPIO_NUM_12
-#define STOP GPIO_NUM_12
+#define STOP GPIO_NUM_12    // for wake up
+
+
 //Amp power enable
-#define PW GPIO_NUM_21      
+#define PW GPIO_NUM_21    
+
+// Sd detect 
+#define SDD GPIO_NUM_34     
 
 #define SD_CS         13
 #define SPI_MOSI      15
 #define SPI_MISO      2
 #define SPI_SCK       14
 
-#define SDD GPIO_NUM_34     // Sd detect
 
 
 #define maxMode 2
@@ -473,8 +470,8 @@ void setup()
 {
     Serial.begin(115200);
     esp_err_t err;
-    err = nvs_flash_init();
-    if(err != ESP_OK) printf("nvs flash error...\n");
+   // err = nvs_flash_init();
+   // if(err != ESP_OK) printf("nvs flash error...\n");
  
     if(!SPIFFS.begin(true)){Serial.println("Erreur SPIFFS");   
     printf("====> %d\n",(int)SPIFFS.totalBytes());
@@ -492,22 +489,19 @@ void setup()
         gpio_reset_pin(MU);
         gpio_reset_pin(VP);
         gpio_reset_pin(VM);
-        gpio_reset_pin(CFG);
         gpio_reset_pin(SDD);
 //       gpio_reset_pin(STOP);      
          
 //gpio_set_direction
         gpio_set_direction(MU, GPIO_MODE_INPUT);  
         gpio_set_direction(VP, GPIO_MODE_INPUT);  
-        gpio_set_direction(VM, GPIO_MODE_INPUT);  
-        gpio_set_direction(CFG, GPIO_MODE_INPUT);           
+        gpio_set_direction(VM, GPIO_MODE_INPUT);          
         gpio_set_direction(SDD, GPIO_MODE_INPUT);  
 
 //gpio_set_pull_mode
         gpio_set_pull_mode(MU, GPIO_PULLUP_ONLY);
         gpio_set_pull_mode(VP, GPIO_PULLUP_ONLY);
         gpio_set_pull_mode(VM, GPIO_PULLUP_ONLY);
-        gpio_set_pull_mode(CFG, GPIO_PULLUP_ONLY);
         gpio_set_pull_mode(SDD, GPIO_PULLUP_ONLY);
 
 
@@ -544,7 +538,6 @@ void setup()
     esp_read_mac((uint8_t *)&mac, ESP_MAC_WIFI_STA);
     sprintf(dev_name, "MUSE_SPEAKER-%x%x%x",mac[3],mac[4],mac[5]);
     printf("%s\n",dev_name);
-   // char *dev_name = "MUSE_SPEAKER";
     esp_bt_dev_set_device_name(dev_name);
 
 //initialize A2DP sink 
@@ -575,7 +568,8 @@ static int b0 = -1, b1 = -1, b2 = -1;
 
 
 /////////////////////////////////////////////////////////////////  
-// prise en charge des boutons
+// buttons handling  => bn
+//         bn = time the button n remains pressed (x 100 ms)
 /////////////////////////////////////////////////////////////////
     if((gpio_get_level(VP) == 1) && (ec0 == 1)){b0 = v0; ec0 = 0;}
     if((gpio_get_level(VP) == 1) && (b0 == -1)) {v0 = 0; ec0 = 0;}
@@ -600,7 +594,7 @@ static int b0 = -1, b1 = -1, b2 = -1;
     if (vol < 0) vol = 0;
 
 
-//changement de volume
+//volume change
    if((vol != oldVol))
   {
       beep();
