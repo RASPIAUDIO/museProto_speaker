@@ -56,7 +56,7 @@ extern "C"
 #define VM GPIO_NUM_32      // short => volume down  long => previous station
 #define VP GPIO_NUM_19      // short => volume up   long => next station
 #define STOP GPIO_NUM_12    // for wake up
-
+#define GAIN GPIO_NUM_23
 
 //Amp power enable
 #define PW GPIO_NUM_21    
@@ -75,7 +75,7 @@ extern "C"
 #define btM 0
 #define sdM 1
 
-#define maxVol 21
+#define maxVol 40
 
 uint8_t vplus = 0, vmoins = 0, vmode = 0;
 uint8_t vmute = 0;
@@ -509,6 +509,9 @@ void setup()
         gpio_reset_pin(PW);
         gpio_set_direction(PW, GPIO_MODE_OUTPUT);        
         gpio_set_level(PW, 1); 
+   
+// set amp gain
+   gpio_set_pull_mode(GAIN, GPIO_PULLDOWN_ONLY);   // 15dB  
                        
 // init i2s default rates
  
